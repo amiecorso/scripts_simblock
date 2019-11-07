@@ -1,6 +1,7 @@
 import os
 import subprocess
 import shutil
+import argparse
 from datetime import datetime
 
 
@@ -11,10 +12,10 @@ RESULTS_DIR = "/Users/amiecorso/scripts/results/"
 DATA_DIR = "/Users/amiecorso/scripts/data/"
 
 # SETTING COMBINATIONS
-NUM_NODES = [1, 8] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS = [100, 800] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
+NUM_NODES = [1, 2, 4, 8, 16, 32, 64, 128] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+BLOCK_INTERVALS = [5, 10, 20, 50, 100, 200, 400, 800, 1000, 2000, 3000, 4000] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
 BLOCK_SIZES = [535000] # bytes
-ENDBLOCKHEIGHT = 100
+ENDBLOCKHEIGHT = 400
 
 def write_sim_config(nodes, interval, blocksize, endblockheight):
     ''' Update the SimulationConfiguration.java file with given parameters'''
@@ -94,6 +95,14 @@ def process_results(results_dir):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-test', action='store_true')
+    args = parser.parse_args()
+
+    if args.test:
+        subprocess.run(["rm", "-rf", RESULTS_DIR])
+        subprocess.run(["rm", "-rf", DATA_DIR])
+
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
     for nodecount in NUM_NODES:
@@ -105,5 +114,4 @@ def main():
     process_results(RESULTS_DIR)
 
 
-subprocess.run(["rm", "-rf", RESULTS_DIR])
 main()
