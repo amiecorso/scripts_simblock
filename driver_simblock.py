@@ -7,14 +7,18 @@ from datetime import datetime
 NET_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/NetworkConfiguration.java"
 SIM_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/SimulationConfiguration.java"
 OUT_DIR = "/Users/amiecorso/simblock/simulator/src/dist/output/"
-RESULTS_DIR = "/Users/amiecorso/scripts/results/"
+#RESULTS_DIR = "/Users/amiecorso/scripts/results/"
+RESULTS_DIR = "/Users/amiecorso/scripts/test_results/"
+#DATA_DIR = "/Users/amiecorso/scripts/data/"
+DATA_DIR = "/Users/amiecorso/scripts/test_data/"
 
 # SETTING COMBINATIONS
-NUM_NODES = [1, 2, 4] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS = [5, 10, 20] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
+NUM_NODES = [1, 8] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+BLOCK_INTERVALS = [20, 100, 400] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
 BLOCK_SIZES = [535000] # bytes
+ENDBLOCKHEIGHT = 100
 
-def write_sim_config(nodes, interval, blocksize):
+def write_sim_config(nodes, interval, blocksize, endblockheight):
     ''' Update the SimulationConfiguration.java file with given parameters'''
     with open(SIM_PATH, "r") as simconfig:
         contents = simconfig.readlines()
@@ -24,6 +28,7 @@ def write_sim_config(nodes, interval, blocksize):
         contents[23] = " ".join(contents[23].split()[:-1]) + ' ' + str(interval) + ";\n"
         # line 32 : BLOCKSIZE
         contents[32] = " ".join(contents[32].split()[:-1]) + ' ' + str(blocksize) + ";\n"
+        contents[29] = " ".join(contents[29].split()[:-1]) + ' ' + str(endblockheight) + ";\n"
     with open(SIM_PATH, "w") as simconfig:
         simconfig.writelines(contents)
 
@@ -41,11 +46,39 @@ def collect_outputs(settings):
     settings_prefix = ''
     for sett in settings:
         settings_prefix += str(sett) + "_"
-    blocklist_path = settings_prefix + "blocklist_" + now
-    output_path = settings_prefix + "output_" + now
-    shutil.move(OUT_DIR + 'blockList.txt', RESULTS_DIR + blocklist_path)
-    shutil.move(OUT_DIR + 'output.json', RESULTS_DIR + output_path)
+    blocklist_path = RESULTS_DIR + settings_prefix + "blocklist_" + now
+    output_path = RESULTS_DIR + settings_prefix + "output_" + now
+    shutil.move(OUT_DIR + 'blockList.txt', blocklist_path)
+    shutil.move(OUT_DIR + 'output.json', output_path)
+    return (blocklist_path, output_path)
 
+
+def calc_SBR(filepath):
+    ''' Return Stale Block Rate (SBR) for given experiment '''
+    total_count = 0
+    orphan_count = 0
+    with open(filepath, 'r') as f:
+        for line in f:
+            if "Orphan" in line:
+                orphan_count += 1
+            total_count += 1
+    return round(orphan_count / total_count, 2)
+
+
+def process_results(results_dir):
+    ''' Generate CSV summary of data from output files '''
+    results = []
+    for f in os.listdir(results_dir):
+        if "blocklist" in f:
+            SBR = calc_SBR(results_dir + f)
+            splitname = f.split("_")
+            nodes, interval, size = splitname[:3]
+            results.append(','.join((str(nodes), str(interval), str(size), str(SBR))) + '\n')
+    if not os.path.exists(DATA_DIR):
+        os.mkdir(DATA_DIR)
+    with open(DATA_DIR + 'data.csv', 'w') as outfile:
+        outfile.write(''.join(('nodes', ',', 'interval', ',', 'blocksize', ',', 'SBR', '\n')))
+        outfile.writelines(results)
 
 
 def main():
@@ -54,8 +87,11 @@ def main():
     for nodecount in NUM_NODES:
         for interval in BLOCK_INTERVALS:
             for size in BLOCK_SIZES:
-                write_sim_config(nodecount, interval, size)
+                write_sim_config(nodecount, interval, size, ENDBLOCKHEIGHT)
                 build_and_run()
-                collect_outputs((nodecount, interval, size))
+                blocklist_path, output_path = collect_outputs((nodecount, interval, size))
+    process_results(RESULTS_DIR)
 
+
+subprocess.run(["rm", "-rf", RESULTS_DIR])
 main()
