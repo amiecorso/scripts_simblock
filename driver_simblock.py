@@ -7,14 +7,12 @@ from datetime import datetime
 NET_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/NetworkConfiguration.java"
 SIM_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/SimulationConfiguration.java"
 OUT_DIR = "/Users/amiecorso/simblock/simulator/src/dist/output/"
-#RESULTS_DIR = "/Users/amiecorso/scripts/results/"
-RESULTS_DIR = "/Users/amiecorso/scripts/test_results/"
-#DATA_DIR = "/Users/amiecorso/scripts/data/"
-DATA_DIR = "/Users/amiecorso/scripts/test_data/"
+RESULTS_DIR = "/Users/amiecorso/scripts/results/"
+DATA_DIR = "/Users/amiecorso/scripts/data/"
 
 # SETTING COMBINATIONS
 NUM_NODES = [1, 8] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS = [20, 100, 400] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
+BLOCK_INTERVALS = [100, 800] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
 BLOCK_SIZES = [535000] # bytes
 ENDBLOCKHEIGHT = 100
 
@@ -64,6 +62,19 @@ def calc_SBR(filepath):
             total_count += 1
     return round(orphan_count / total_count, 2)
 
+def calc_throughput(filepath):
+    ''' Return throughput as bytes/sec for given experiment '''
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+    blocksize = int(filepath.split("_")[2])
+    for line in lines[::-1]:
+        if "OnChain" in line:
+            splitline = line.split(":")
+            height = int(splitline[1].strip())
+            gen_time = int(splitline[-1].strip())
+            return round((height * blocksize) / gen_time, 2)
+    return 0
+
 
 def process_results(results_dir):
     ''' Generate CSV summary of data from output files '''
@@ -71,13 +82,14 @@ def process_results(results_dir):
     for f in os.listdir(results_dir):
         if "blocklist" in f:
             SBR = calc_SBR(results_dir + f)
+            throughput = calc_throughput(results_dir + f)
             splitname = f.split("_")
             nodes, interval, size = splitname[:3]
-            results.append(','.join((str(nodes), str(interval), str(size), str(SBR))) + '\n')
+            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput))) + '\n')
     if not os.path.exists(DATA_DIR):
         os.mkdir(DATA_DIR)
     with open(DATA_DIR + 'data.csv', 'w') as outfile:
-        outfile.write(''.join(('nodes', ',', 'interval', ',', 'blocksize', ',', 'SBR', '\n')))
+        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput')) + '\n')
         outfile.writelines(results)
 
 
