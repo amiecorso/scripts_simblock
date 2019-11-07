@@ -13,7 +13,7 @@ DATA_DIR = "/Users/amiecorso/scripts/data/"
 
 # SETTING COMBINATIONS
 NUM_NODES = [1, 2, 4, 8, 16, 32, 64, 128] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS = [5, 10, 20, 50, 100, 200, 400, 800, 1000, 2000, 3000, 4000] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
+BLOCK_INTERVALS = [5, 10, 20, 30, 40, 50, 80, 100, 200, 400, 600, 800, 1000] #[5, 10, 20, 40, 80, 120, 240, 300] # seconds
 BLOCK_SIZES = [535000] # bytes
 ENDBLOCKHEIGHT = 400
 
