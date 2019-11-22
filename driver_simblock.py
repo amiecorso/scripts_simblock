@@ -10,10 +10,11 @@ SIM_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/
 OUT_DIR = "/Users/amiecorso/simblock/simulator/src/dist/output/"
 RESULTS_DIR = "/Users/amiecorso/scripts/results/"
 DATA_DIR = "/Users/amiecorso/scripts/data/"
+ARCHIVE_DIR = "/Users/amiecorso/scripts/archive/"
 
 # SETTING COMBINATIONS
 NUM_NODES = [1, 2, 4, 8, 16, 32, 64, 128] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS =[sec * 1000 for sec in [5, 10, 20, 30, 40, 50, 80, 100, 200, 400, 600]] # milliseconds
+BLOCK_INTERVALS =[sec * 1000 for sec in [5, 10, 20, 30, 40, 50, 80, 100]] # milliseconds
 BLOCK_SIZES = [535000] # bytes
 ENDBLOCKHEIGHT = 400
 
@@ -105,6 +106,8 @@ def main():
 
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
+    if not os.path.exist(ARCHIVE_DIR):
+        os.mkdir(ARCHIVE_DIR)
     for nodecount in NUM_NODES:
         for interval in BLOCK_INTERVALS:
             for size in BLOCK_SIZES:
@@ -112,6 +115,8 @@ def main():
                 build_and_run()
                 blocklist_path, output_path = collect_outputs((nodecount, interval, size))
     process_results(RESULTS_DIR)
+    # move experimental results to archive dir
+
 
 
 main()
