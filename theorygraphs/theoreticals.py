@@ -41,10 +41,10 @@ def wastage_rate_markov(netsize, blockinterval, propdelay):
 NETSIZE = 200
 # (sec)
 PROPDELAY = NETSIZE/2 # TODO: what's a valid value for prop delay? - is it a function of network size?!?!
-PROPDELAY = 150
+PROPDELAY = (2/3)*NETSIZE
 # (sec) 5 sec to 10 minutes, step by 10 seconds
-INTERVALS = np.arange(5, 600, 10)  
-INTERVALS = np.array([5, 10, 15, 20, 25, 30])
+INTERVALS = np.arange(5, 200, 1)  
+#INTERVALS = np.array([5, 10, 15, 20, 25, 30])
 
 # calculate result arrays:
 throughput_simple = growth_rate_simple(NETSIZE, INTERVALS, PROPDELAY)
