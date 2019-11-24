@@ -7,6 +7,12 @@ import random
 import os
 
 # following functions return expected throughput (blocks/sec) as function of params
+def harmonic_sum(k):
+    total = 0
+    for i in range(1, k):
+        total += 1/i
+    return total
+
 def growth_rate_simple(netsize, blockinterval, propdelay):
     blocks_per_sec = 1 / blockinterval
     return blocks_per_sec # TODO: should we subtract the wastage rate??
@@ -14,18 +20,18 @@ def growth_rate_simple(netsize, blockinterval, propdelay):
 def wastage_rate_simple(netsize, blockinterval, propdelay):
     return (netsize * propdelay) / blockinterval
 
-def growth_rate_markov(netsize, blockinterval, propdelay):
-    return (netsize / blockinterval) * (1 - (propdelay / blockinterval) * (netsize - 1))
+def growth_rate_markov(netsize, blockinterval, propdelay): # blocks/sec
+    lambd = (1/blockinterval)/netsize
+    return (netsize * lambd) - (lambd**2) * propdelay * netsize * harmonic_sum(netsize)
 
 def wastage_rate_markov(netsize, blockinterval, propdelay):
-    return (netsize * (netsize - 1)) * (propdelay / (blockinterval ** 2))
+    lambd = (1/blockinterval)/netsize
+    return (lambd**2) * propdelay * netsize * harmonic_sum(netsize)
 
 
-def growth_from_wastage(maxthrough, wastage):
-    return maxthrough - wastage
 # we can then generate array of throughput values as function of block interval, for fixed netsize/prop delay
 
-NETSIZE = 32
+NETSIZE = 200
 # (sec)
 PROPDELAY = 5 # TODO: what's a valid value for prop delay?
 # (sec) 5 sec to 10 minutes, step by 10 seconds
@@ -34,10 +40,8 @@ INTERVALS = np.arange(5, 600, 10)
 # calculate result arrays:
 throughput_simple = growth_rate_simple(NETSIZE, INTERVALS, PROPDELAY)
 wastage_simple = wastage_rate_simple(NETSIZE, INTERVALS, PROPDELAY)
-#throughput_markov = growth_rate_markov(NETSIZE, INTERVALS, PROPDELAY)
+throughput_markov = growth_rate_markov(NETSIZE, INTERVALS, PROPDELAY)
 wastage_markov = wastage_rate_markov(NETSIZE, INTERVALS, PROPDELAY)
-throughput_markov = growth_from_wastage(throughput_simple, wastage_markov)
-
 
 # PLOTS
 fig, ax = plt.subplots()

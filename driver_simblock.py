@@ -14,9 +14,9 @@ DATA_DIR = "/Users/amiecorso/scripts/data/"
 ARCHIVE_DIR = "/Users/amiecorso/scripts/archive/"
 
 # SETTING COMBINATIONS
-NUM_NODES = [5000] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+NUM_NODES = [200] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
 BLOCK_INTERVALS =[sec * 1000 for sec in np.arange(5, 300, 5)] # milliseconds
-BLOCK_SIZES = [535000] # bytes
+BLOCK_SIZES = [535000 * 10] # bytes
 ENDBLOCKHEIGHT = 300
 '''
 NUM_NODES = [1, 4, 16, 32, 128] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
@@ -62,7 +62,7 @@ def collect_outputs(settings):
     blocklist_path = RESULTS_DIR + settings_prefix + "blocklist_" + now
     output_path = RESULTS_DIR + settings_prefix + "output_" + now
     shutil.move(OUT_DIR + 'blockList.txt', blocklist_path)
-    shutil.move(OUT_DIR + 'output.json', output_path)
+    subprocess.run(["rm", OUT_DIR + 'output.json']) # we only want the blocklist! not this long output file
     return (blocklist_path, output_path)
 
 
@@ -77,7 +77,19 @@ def calc_SBR(filepath):
             total_count += 1
     return round(orphan_count / total_count, 2)
 
-def calc_throughput(filepath):
+def calc_throughput_blocks(filepath):
+    ''' Return throughput as bytes/sec for given experiment '''
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+    for line in lines[::-1]: # reversed blocklist
+        if "OnChain" in line: # find the first real one
+            splitline = line.split(":")
+            height = int(splitline[1].strip())
+            gen_time = int(splitline[-1].strip()) / 1000 # ms to sec
+            return height / gen_time # can't round!! because the numbers are already very small?
+    return 0
+
+def calc_throughput_bytes(filepath):
     ''' Return throughput as bytes/sec for given experiment '''
     with open(filepath, 'r') as f:
         lines = f.readlines()
@@ -86,7 +98,7 @@ def calc_throughput(filepath):
         if "OnChain" in line:
             splitline = line.split(":")
             height = int(splitline[1].strip())
-            gen_time = int(splitline[-1].strip())
+            gen_time = int(splitline[-1].strip()) / 1000 # ms to sec
             return round((height * blocksize) / gen_time, 2)
     return 0
 
@@ -97,14 +109,15 @@ def process_results(results_dir, outfile_name):
     for f in os.listdir(results_dir):
         if "blocklist" in f:
             SBR = calc_SBR(results_dir + f)
-            throughput = calc_throughput(results_dir + f)
+            throughput = calc_throughput_blocks(results_dir + f)
             splitname = f.split("_")
             nodes, interval, size = splitname[:3]
-            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput))) + '\n')
+            theoretical_through = (1/int(interval)) * 1000 # ms to sec
+            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput), str(theoretical_through))) + '\n')
     if not os.path.exists(DATA_DIR):
         os.mkdir(DATA_DIR)
     with open(DATA_DIR + outfile_name, 'w') as outfile:
-        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput')) + '\n')
+        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput', 'theoretical_throughput')) + '\n')
         outfile.writelines(results)
 
 
@@ -137,5 +150,5 @@ def main():
     subprocess.run(["rm", "-rf", results_name])
 
 
-
-main()
+if __name__ == '__main__':
+    main()

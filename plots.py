@@ -57,6 +57,7 @@ for size in netsizes:
     for run in repeats:
         subset = df[df['nodes'] == size]
         subset.plot(x="interval", y="throughput", ax=ax, label=str(size), color=color)
+        subset.plot(x="interval", y="theoretical_throughput", ax=ax, label=str(size), color=color, linestyle='dashed')
 ax.set(xlabel="Block Interval (ms)", ylabel="Throughput (bytes/sec)")
 fig = ax.get_figure()
 fig.savefig("/Users/amiecorso/Desktop/through_vs_interval.pdf")
