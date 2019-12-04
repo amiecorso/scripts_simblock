@@ -12,25 +12,19 @@ SIM_PATH = "/Users/amiecorso/simblock/simulator/src/main/java/SimBlock/settings/
 OUT_DIR = "/Users/amiecorso/simblock/simulator/src/dist/output/"
 RESULTS_DIR = "/Users/amiecorso/scripts/results/"
 DATA_DIR = "/Users/amiecorso/scripts/data/"
-ARCHIVE_DIR = "/Users/amiecorso/scripts/archive/"
 
 # SETTING COMBINATIONS
-NUM_NODES = [1, 8, 32, 128, 512, 2096] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+NUM_NODES = [1, 8, 32 ]#, 128, 512, 2096] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
 BLOCK_INTERVALS =[sec * 1000 for sec in np.arange(5, 200, 5)] # milliseconds
-BLOCK_SIZES = [535000 * 50] # bytes
+BLOCK_SIZES = [535000 * 10] # bytes
 ENDBLOCKHEIGHT = 100
 '''
-NUM_NODES = [1, 4, 16, 32, 128] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
-BLOCK_INTERVALS =[sec * 1000 for sec in np.arange(5, 600, 10)] # milliseconds
-BLOCK_SIZES = [535000] # bytes
-ENDBLOCKHEIGHT = 400
-'''
 #tiny test
-NUM_NODES = [200] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+NUM_NODES = [16] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
 BLOCK_INTERVALS =[sec * 1000 for sec in [30]] # milliseconds
 BLOCK_SIZES = [535000 * 10] # bytes
 ENDBLOCKHEIGHT = 50 
-
+'''
 
 def write_sim_config(nodes, interval, blocksize, endblockheight):
     ''' Update the SimulationConfiguration.java file with given parameters'''
@@ -47,11 +41,16 @@ def write_sim_config(nodes, interval, blocksize, endblockheight):
         simconfig.writelines(contents)
 
 
-def build_and_run():
+def build_and_run(settings):
     ''' rebuild simblock with given settings '''
+    settings_prefix = ''
+    for sett in settings:
+        settings_prefix += str(sett) + "_"
+    propdelay_file = RESULTS_DIR + settings_prefix + "propdelay.txt"
     os.chdir("/Users/amiecorso/simblock")
     subprocess.run(["gradle", "clean", "build"])
-    subprocess.run(["gradle", ":simulator:run"])
+    #subprocess.run(["gradle", ":simulator:run", ">", propdelay_file])
+    subprocess.run("gradle :simulator:run > " + propdelay_file, shell=True)
 
 
 def collect_outputs(settings):
@@ -105,10 +104,29 @@ def calc_throughput_bytes(filepath):
     return 0
 
 
+def get_avg_prop_delay(filename):
+    with open(filename, 'r') as f:
+        contents = f.readlines()
+    total_proptime = 0
+    numsamples = 0
+    for line in contents:
+        splitline = line.split(",")
+        if len(splitline) == 2:
+            try:
+                propd = int(splitline[1].strip()) / 1000
+                if propd > 0:
+                    total_proptime += propd
+                    numsamples += 1
+            except:
+                pass
+    if numsamples > 0:
+        return round( total_proptime / numsamples, 5)
+    else:
+        return 0
+
 def get_avg_pairwise_delay(filename):
     with open(filename, 'r') as f:
         contents = f.read()
-
     total_proptime = 0
     numsamples = 0
     aslist = eval(contents)
@@ -132,8 +150,15 @@ def process_results(results_dir, outfile_name):
                 outputjson = f.replace("blocklist", "output") 
                 avg_delay = get_avg_pairwise_delay(results_dir + outputjson)
             except:
-                print("Couldn't find file: ", outputjson, "...")
+                print("Couldn't find output file: ", outputjson, "...")
                 avg_delay = "NaN"
+            try:
+                fileparts = f.split("blocklist")
+                propdfile = fileparts[0] + "propdelay.txt"
+                avg_prop_delay = get_avg_prop_delay(results_dir + propdfile)
+            except:
+                print("Couldn't find propd file: ", propdfile, "...")
+                avg_prop_delay = "NaN"
             SBR = calc_SBR(results_dir + f)
             throughput = calc_throughput_blocks(results_dir + f)
             splitname = f.split("_")
@@ -142,14 +167,14 @@ def process_results(results_dir, outfile_name):
             size = int(size)
             interval = int(interval) / 1000 # ms to sec
             theoretical_through = 1 / int(interval)
-            growth_rate_markov = th.growth_rate_markov(nodes, interval, avg_delay)
-            waste_rate_markov = th.wastage_rate_markov(nodes, interval, avg_delay)
+            growth_rate_markov = th.growth_rate_markov(nodes, interval, avg_prop_delay)
+            waste_rate_markov = th.wastage_rate_markov(nodes, interval, avg_prop_delay)
             SBR_markov = waste_rate_markov / theoretical_through
-            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput), str(theoretical_through), str(avg_delay), str(growth_rate_markov), str(waste_rate_markov), str(SBR_markov))) + '\n')
+            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput), str(theoretical_through), str(avg_delay), str(avg_prop_delay), str(growth_rate_markov), str(waste_rate_markov), str(SBR_markov))) + '\n')
     if not os.path.exists(DATA_DIR):
         os.mkdir(DATA_DIR)
     with open(DATA_DIR + outfile_name, 'w') as outfile:
-        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput', 'theoretical_throughput', 'avg_delay', 'throughput_markov', 'waste_rate_markov', 'SBR_markov')) + '\n')
+        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput', 'theoretical_throughput', 'avg_delay', 'avg_prop_delay', 'throughput_markov', 'waste_rate_markov', 'SBR_markov')) + '\n')
         outfile.writelines(results)
 
 
@@ -164,13 +189,11 @@ def main():
 
     if not os.path.exists(RESULTS_DIR):
         os.mkdir(RESULTS_DIR)
-    if not os.path.exists(ARCHIVE_DIR):
-        os.mkdir(ARCHIVE_DIR)
     for nodecount in NUM_NODES:
         for interval in BLOCK_INTERVALS:
             for size in BLOCK_SIZES:
                 write_sim_config(nodecount, interval, size, ENDBLOCKHEIGHT)
-                build_and_run()
+                build_and_run((nodecount, interval, size))
                 blocklist_path, output_path = collect_outputs((nodecount, interval, size))
     now = ''.join('_'.join(str(datetime.now()).split()).split(".")[:-1])
     datafilename = "data_" + now + ".csv"
@@ -178,7 +201,6 @@ def main():
     # move experimental results to archive dir
     results_name = RESULTS_DIR.rstrip("/") + "_" + now
     #subprocess.run(["mv", RESULTS_DIR, results_name])
-    #subprocess.run(["cp", "-r", results_name, ARCHIVE_DIR])
     #subprocess.run(["rm", "-rf", results_name])
     # actually just destroy the huge output files:
     subprocess.run(["rm", "-rf", RESULTS_DIR])

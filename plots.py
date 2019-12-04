@@ -42,7 +42,8 @@ for size in netsizes:
     color = colors[netsizes.index(size)]
     for run in repeats:
         subset = df[df['nodes'] == size]
-        subset.plot(x="interval", y="SBR", ax=ax, label=str(size), color=color)
+        subset.plot(x="interval", y="SBR", ax=ax, label=str(size) + "_SimBlock", color=color)
+        subset.plot(x="interval", y="SBR_markov", ax=ax, label=str(size) + "_Markov", color=color, linestyle="dotted")
 ax.set(xlabel="Block Interval (sec)", ylabel="Stale Block Rate")
 legend = plt.legend(title="Network Size")
 fig = ax.get_figure()
@@ -67,7 +68,8 @@ for size in netsizes:
     color = colors[netsizes.index(size)]
     for run in repeats:
         subset = df[df['nodes'] == size]
-        subset.plot(x="interval", y="throughput", ax=ax, label=str(size), color=color)
+        subset.plot(x="interval", y="throughput", ax=ax, label=str(size) + "_SimBlock", color=color)
+        subset.plot(x="interval", y="throughput_markov", ax=ax, label=str(size) + "_Markov", color=color, linestyle='dotted')
 subset.plot(x="interval", y="theoretical_throughput", ax=ax, label='theoretical', color='black', linestyle='dashed')
 ax.set(xlabel="Block Interval (sec)", ylabel="Throughput (blocks/sec)")
 legend = plt.legend(title="Network Size")
