@@ -1,0 +1,2 @@
+nodes,interval,blocksize,SBR,throughput,theoretical_throughput,avg_delay,throughput_markov,waste_rate_markov,SBR_markov
+200,30.0,5350000,0.32,0.018511586957624386,0.03333333333333333,2.26303,0.033259495304297074,7.383802903626265e-05,0.0022151408710878793
