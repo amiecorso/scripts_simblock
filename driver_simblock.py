@@ -14,7 +14,7 @@ RESULTS_DIR = "/Users/amiecorso/scripts/results/"
 DATA_DIR = "/Users/amiecorso/scripts/data/"
 
 # SETTING COMBINATIONS
-NUM_NODES = [1, 8, 32 ]#, 128, 512, 2096] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
+NUM_NODES = [1, 8, 32, 128, 512, 2096] #[1, 2, 4, 8, 16, 32, 64, 128, 256]
 BLOCK_INTERVALS =[sec * 1000 for sec in np.arange(5, 200, 5)] # milliseconds
 BLOCK_SIZES = [535000 * 10] # bytes
 ENDBLOCKHEIGHT = 100
@@ -170,11 +170,14 @@ def process_results(results_dir, outfile_name):
             growth_rate_markov = th.growth_rate_markov(nodes, interval, avg_prop_delay)
             waste_rate_markov = th.wastage_rate_markov(nodes, interval, avg_prop_delay)
             SBR_markov = waste_rate_markov / theoretical_through
-            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput), str(theoretical_through), str(avg_delay), str(avg_prop_delay), str(growth_rate_markov), str(waste_rate_markov), str(SBR_markov))) + '\n')
+            growth_rate_simple = th.growth_rate_simple(nodes, interval, avg_prop_delay)
+            waste_rate_simple = th.wastage_rate_simple(nodes, interval, avg_prop_delay)
+            SBR_simple = waste_rate_simple / theoretical_through
+            results.append(','.join((str(nodes), str(interval), str(size), str(SBR), str(throughput), str(theoretical_through), str(avg_delay), str(avg_prop_delay), str(growth_rate_markov), str(waste_rate_markov), str(SBR_markov), str(growth_rate_simple), str(waste_rate_simple), str(SBR_simple))) + '\n')
     if not os.path.exists(DATA_DIR):
         os.mkdir(DATA_DIR)
     with open(DATA_DIR + outfile_name, 'w') as outfile:
-        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput', 'theoretical_throughput', 'avg_delay', 'avg_prop_delay', 'throughput_markov', 'waste_rate_markov', 'SBR_markov')) + '\n')
+        outfile.write(','.join(('nodes', 'interval', 'blocksize', 'SBR', 'throughput', 'theoretical_throughput', 'avg_delay', 'avg_prop_delay', 'throughput_markov', 'waste_rate_markov', 'SBR_markov', 'throughput_simple', 'waste_rate_simple', 'SBR_simple')) + '\n')
         outfile.writelines(results)
 
 
