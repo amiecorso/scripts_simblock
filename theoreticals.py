@@ -19,6 +19,7 @@ def harmonic_sum(k):
     total = 0
     for i in range(1, k):
         total += 1/i
+    return k - 1
     return total
 
 def theoretical_throughput(blockinterval):
@@ -45,7 +46,7 @@ def wastage_rate_markov(netsize, blockinterval, propdelay):
 
 def delay_factor(netsize, blockinterval, propdelay):
     return 0
-    return  propdelay / (blockinterval ** 2.5)
+    return  propdelay / (blockinterval ** 4) * (netsize) + (1/100) * (propdelay / blockinterval)
 
 # we can then generate array of throughput values as function of block interval, for fixed netsize/prop delay
 if __name__ == '__main__':

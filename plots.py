@@ -17,6 +17,10 @@ else:
 df = pd.read_csv(DATA)
 df = df.sort_values(['nodes', 'interval'])
 
+df = df[df['interval'] >= 30]
+df = df.groupby(['nodes', 'interval']).mean().reset_index()
+print(df)
+
 def wrapper_markov_growth(row):
     netsize = row['nodes']
     blockinterval = row['interval']
@@ -38,7 +42,6 @@ df['new_through_markov'] = df.apply(lambda row: wrapper_markov_growth(row), axis
 df['new_wastage_markov'] = df.apply(lambda row: wrapper_markov_wastage(row), axis=1)
 df['new_SBR_markov'] = df.apply(lambda row: wrapper_SBR_markov(row), axis=1)
 
-print(df)
 
 netsizes = list(df["nodes"].unique())
 intervals = list(df["interval"].unique())
@@ -84,7 +87,7 @@ for size in netsizes:
     fig, ax = plt.subplots()
     fig.suptitle("Throughput " + "(" + str(size) + " nodes)")
     fig.set_size_inches(6, 6)
-    ax.set_ylim([-0.05,.2])
+    ax.set_ylim([0,.05])
     #index = netsizes.index(size)
     #ax = axes[index]
     color = colors[netsizes.index(size)]
@@ -103,7 +106,7 @@ fig.suptitle("Throughput")
 fig.set_size_inches(12, 6)
 ax = axes[0] # first column, simblock results
 ax.set_title("SimBlock")
-ax.set_ylim([0,.1])
+ax.set_ylim([0,.05])
 for size in netsizes:
     color = colors[netsizes.index(size)]
     for run in repeats:
@@ -114,7 +117,7 @@ ax.set(xlabel="Block Interval (sec)", ylabel="Throughput (blocks/sec)")
 legend = ax.legend(title="Network Size")
 ax = axes[1] # first column, simblock results
 ax.set_title("Markov Model")
-ax.set_ylim([0,.1])
+ax.set_ylim([0,.05])
 for size in netsizes:
     color = colors[netsizes.index(size)]
     for run in repeats:
@@ -132,6 +135,7 @@ fig.set_size_inches(12, 6)
 ax = axes[0] # first column, simblock results
 ax.set_title("SimBlock")
 #ax.set_ylim([0,.1])
+ax.set_ylim([0,1])
 for size in netsizes:
     color = colors[netsizes.index(size)]
     for run in repeats:
@@ -141,6 +145,7 @@ ax.set(xlabel="Block Interval (sec)", ylabel="Stale Block Rate")
 legend = ax.legend(title="Network Size")
 ax = axes[1] # first column, simblock results
 ax.set_title("Markov Model")
+ax.set_ylim([0,1])
 #ax.set_ylim([0,.1])
 for size in netsizes:
     color = colors[netsizes.index(size)]
@@ -174,6 +179,7 @@ for size in netsizes:
         subset = df[df['nodes'] == size]
         subset.plot(x="interval", y="avg_prop_delay", ax=ax, label=str(size) + "_SimBlock", color=color)
 ax.set(xlabel="Block Interval", ylabel="Avg Prop Delay (sec)")
+plt.legend(title="Network Size")
 fig = ax.get_figure()
 fig.savefig("/Users/amiecorso/Desktop/delays.pdf")
 
